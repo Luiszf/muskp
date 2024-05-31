@@ -2,9 +2,9 @@ use anyhow::{Context, Ok};
 
 use glob::glob;
 use rand::{seq::SliceRandom, thread_rng};
-use rodio::{cpal::Stream, decoder, Decoder, OutputStream, Sink, Source};
+use rodio::{Decoder, OutputStream, Sink, Source};
 use std::{
-    fs::File, future, io::{BufReader, Read, Write}, os::unix::net::{UnixListener, UnixStream}, path::PathBuf, sync::{Arc, BarrierWaitResult, Mutex}, thread::{self, sleep}, time::Duration
+    fs::File, io::{BufReader, Read}, os::unix::net::{UnixListener, UnixStream}, path::PathBuf, sync::{Arc}, thread::{self, sleep}
 };
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
@@ -49,7 +49,7 @@ async fn main() -> anyhow::Result<()> {
                     handle_stream(stream)
                 );
                 let mut option = t.join().unwrap();
-                let p = thread::spawn(move || loop {
+                let _p = thread::spawn(move || loop {
                     let sink = Arc::clone(&sink);
                     let musics = Arc::clone(&musics);
                     if option == "pause" {
@@ -75,7 +75,7 @@ async fn main() -> anyhow::Result<()> {
                     count += 1
                 }).join().unwrap();
             }
-            Err(err) => {}
+            Err(_err) => {}
         }
     }
     println!("sera que chega aqui");

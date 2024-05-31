@@ -1,13 +1,13 @@
 use anyhow::{Context, Ok};
-use clap::{Arg, Command, Parser};
-use dialoguer::theme::Theme;
+use clap::{Command};
+
 use dialoguer::FuzzySelect;
 use glob::glob;
-use std::io::{BufReader, Read};
-use std::os::unix::net::{SocketAddr, UnixListener};
+use std::io::{Read};
+
 use std::path::Display;
-use std::sync::atomic::AtomicBool;
-use std::thread;
+
+
 use std::{io::Write, os::unix::net::UnixStream};
 
 #[tokio::main]
