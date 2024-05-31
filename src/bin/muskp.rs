@@ -1,29 +1,27 @@
 use anyhow::{Context, Ok};
+use clap::{Arg, Command, Parser};
 use dialoguer::theme::Theme;
+use dialoguer::FuzzySelect;
+use glob::glob;
 use std::io::{BufReader, Read};
 use std::os::unix::net::{SocketAddr, UnixListener};
+use std::path::Display;
 use std::sync::atomic::AtomicBool;
 use std::thread;
 use std::{io::Write, os::unix::net::UnixStream};
-use glob::glob;
-use clap::{Arg, Command, Parser};
-use dialoguer::FuzzySelect;
-use std::path::Display;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     let c = Command::new("muskp")
         .subcommand(Command::new("play"))
-        .subcommand(
-            Command::new("search").arg(Arg::new("name").short('n').action(clap::ArgAction::Append)),
-        )
+        .subcommand(Command::new("search"))
         .subcommand(Command::new("pause"))
         .subcommand(Command::new("exit"))
         .subcommand(Command::new("list"))
         .subcommand(Command::new("next"))
         .get_matches();
 
-    let socket_path = "musicsocket";
+    let socket_path = "/tmp/muskp";
 
     let mut socket = UnixStream::connect(socket_path).context("could not connect")?;
 
@@ -58,9 +56,7 @@ async fn main() -> anyhow::Result<()> {
                     Err(e) => println!("{:?}", e),
                 }
             }
-            let musics:Vec<Display> = musics.iter_mut().map(|x| {
-                x.display()
-            }).collect();
+            let musics: Vec<Display> = musics.iter_mut().map(|x| x.display()).collect();
 
             let selection = FuzzySelect::new()
                 .with_prompt("What do you choose?")
