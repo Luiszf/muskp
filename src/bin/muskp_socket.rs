@@ -73,7 +73,7 @@ async fn main() -> anyhow::Result<()> {
                     }
                     play_song(&sink, &musics[count]);
                     count += 1
-                });
+                }).join().unwrap();
             }
             Err(err) => {}
         }
