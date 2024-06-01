@@ -4,8 +4,14 @@ use glob::glob;
 use rand::{seq::SliceRandom, thread_rng};
 use rodio::{Decoder, OutputStream, Sink, Source};
 use std::{
-    fs::File, io::{BufReader, Read}, os::unix::net::{UnixListener, UnixStream}, path::PathBuf, sync::{Arc}, thread::{self, sleep}
+    fs::File,
+    io::{BufReader, Read},
+    os::unix::net::{UnixListener, UnixStream},
+    path::PathBuf,
+    sync::Arc,
 };
+use tokio::time::sleep;
+
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     let socket_path = "/tmp/muskp";
@@ -36,49 +42,44 @@ async fn main() -> anyhow::Result<()> {
     let (_stream, stream_handle) = OutputStream::try_default().unwrap();
     let sink = Arc::new(Sink::try_new(&stream_handle).unwrap());
 
-    unix_listener
-        .set_nonblocking(true)
-        .expect("could not set non blocking socket");
-
     for stream in unix_listener.incoming() {
         match stream {
             std::result::Result::Ok(stream) => {
                 let sink = Arc::clone(&sink);
                 let musics = Arc::clone(&musics);
-                let t = thread::spawn(|| 
-                    handle_stream(stream)
-                );
-                let mut option = t.join().unwrap();
-                let _p = thread::spawn(move || loop {
-                    let sink = Arc::clone(&sink);
-                    let musics = Arc::clone(&musics);
-                    if option == "pause" {
-                        if sink.is_paused() {
-                            sink.play()
-                        } else {
-                            sink.pause()
+                let t = tokio::spawn(async move { handle_stream(stream) });
+                let mut option = t.await.unwrap();
+                let _p = tokio::spawn(async move {
+                    for i in 0..musics.len() {
+                        let sink = Arc::clone(&sink);
+                        let musics = Arc::clone(&musics);
+                        if option == "pause" {
+                            if sink.is_paused() {
+                                sink.play()
+                            } else {
+                                sink.pause()
+                            }
+                            break;
                         }
-                        break;
+                        if option == "next" {
+                            sink.skip_one();
+                            break;
+                        }
+                        if option.starts_with("path") {
+                            let path_str = option.split_off("path".len());
+                            let mut path = PathBuf::new();
+                            path.push(path_str);
+                            play_song(&sink, &path);
+                            break;
+                        }
+
+                        play_song(&sink, &musics[i])
                     }
-                    if option == "next" {
-                        sink.skip_one();
-                        break;
-                    }
-                    if option.starts_with("path") {
-                        let path_str = option.split_off("path".len());
-                        let mut path = PathBuf::new();
-                        path.push(path_str);
-                        play_song(&sink, &path);
-                        break;
-                    }
-                    play_song(&sink, &musics[count]);
-                    count += 1
-                }).join().unwrap();
+                });
             }
             Err(_err) => {}
         }
     }
-    println!("sera que chega aqui");
     Ok(())
 }
 fn play_song(sink: &Sink, path: &PathBuf) {
@@ -87,8 +88,7 @@ fn play_song(sink: &Sink, path: &PathBuf) {
     let duration = &source.total_duration().unwrap();
     println!("{}", path.display());
     sink.append(source);
-
-    sleep(*duration);
+    sink.sleep_until_end()
 }
 
 fn handle_stream(mut unix_stream: UnixStream) -> String {
@@ -99,21 +99,14 @@ fn handle_stream(mut unix_stream: UnixStream) -> String {
     if message.starts_with("play") {
         println!("playing...");
     }
-
     if message.starts_with("pause") {
         println!("pausing...");
-    }
-    if message.starts_with("exit") {
-        println!("exiting...");
     }
     if message.starts_with("list") {
         println!("listing...");
     }
-    if message.starts_with("search") {
-        println!("searching...");
-    }
     if message.starts_with("path") {
-        println!("chegou aqui legal");
+        println!("playing next...");
     }
     if message.starts_with("next") {
         println!("next...");
