@@ -31,8 +31,6 @@ async fn main() -> anyhow::Result<()> {
     }
     let mut rng = thread_rng();
 
-    let mut count: usize = 0;
-
     musics.shuffle(&mut rng);
 
     let musics = Arc::new(musics);
@@ -46,13 +44,13 @@ async fn main() -> anyhow::Result<()> {
         match stream {
             std::result::Result::Ok(stream) => {
                 let sink = Arc::clone(&sink);
-                let musics = Arc::clone(&musics);
+                let mut musics = Arc::clone(&musics);
                 let t = tokio::spawn(async move { handle_stream(stream) });
                 let mut option = t.await.unwrap();
                 let _p = tokio::spawn(async move {
                     for i in 0..musics.len() {
                         let sink = Arc::clone(&sink);
-                        let musics = Arc::clone(&musics);
+                        let mut musics = Arc::clone(&musics);
                         if option == "pause" {
                             if sink.is_paused() {
                                 sink.play()
@@ -73,6 +71,7 @@ async fn main() -> anyhow::Result<()> {
                             break;
                         }
 
+                        println!("Index:{i}");
                         play_song(&sink, &musics[i])
                     }
                 });
@@ -85,7 +84,6 @@ async fn main() -> anyhow::Result<()> {
 fn play_song(sink: &Sink, path: &PathBuf) {
     let file = BufReader::new(File::open(path).unwrap());
     let source = Decoder::new(file).unwrap();
-    let duration = &source.total_duration().unwrap();
     println!("{}", path.display());
     sink.append(source);
     sink.sleep_until_end()
