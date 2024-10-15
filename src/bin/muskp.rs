@@ -6,8 +6,6 @@ use glob::glob;
 use std::io::{Read};
 
 use std::path::Display;
-
-
 use std::{io::Write, os::unix::net::UnixStream};
 
 #[tokio::main]
@@ -37,13 +35,6 @@ async fn main() -> anyhow::Result<()> {
         }
         Some("list") => {
             socket.write(b"list").context("server did not responded")?;
-            socket.shutdown(std::net::Shutdown::Write);
-
-            let mut messege = String::new();
-
-            socket.read_to_string(&mut messege);
-
-            println!("{}", messege)
         }
         Some("next") => {
             socket.write(b"next").context("server did not responded")?;

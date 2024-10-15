@@ -2,8 +2,9 @@ use anyhow::{Context, Ok};
 
 use glob::glob;
 use rand::{seq::SliceRandom, thread_rng};
-use rodio::{Decoder, OutputStream, Sink, Source};
+use rodio::{OutputStream, Sink, Source, Decoder};
 use std::{
+    fmt::Debug,
     fs::File,
     io::{BufReader, Read},
     os::unix::net::{UnixListener, UnixStream},
@@ -51,6 +52,14 @@ async fn main() -> anyhow::Result<()> {
                     for i in 0..musics.len() {
                         let sink = Arc::clone(&sink);
                         let mut musics = Arc::clone(&musics);
+
+                        if option == "list" {
+                            for i in 0..musics.len() {
+                                let song = musics[i].display();
+                                println!("index: {i} Music: {song}")
+                            }
+                        }
+
                         if option == "pause" {
                             if sink.is_paused() {
                                 sink.play()
@@ -65,8 +74,7 @@ async fn main() -> anyhow::Result<()> {
                         }
                         if option.starts_with("path") {
                             let path_str = option.split_off("path".len());
-                            let mut path = PathBuf::new();
-                            path.push(path_str);
+                            let mut path = PathBuf::from(path_str.trim());
                             play_song(&sink, &path);
                             break;
                         }
