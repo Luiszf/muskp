@@ -41,7 +41,7 @@ async fn main() -> anyhow::Result<()> {
         }
         Some("search") => {
             let mut musics = Vec::new();
-            for entry in glob("/home/luis/Músicas/**/*.mp3").expect("Failed to read glob pattern") {
+            for entry in glob("/home/luis/Músicas/Music/*.mp3").expect("Failed to read glob pattern") {
                 match entry {
                     std::result::Result::Ok(path) => musics.push(path),
                     Err(e) => println!("{:?}", e),
